@@ -18,6 +18,12 @@
                         0 0 0
                         0 0 0]))
 
+(def no-winner (atom true))
+(def winner (atom true))
+
+(def stats (atom "player 1 to move"))
+
+
 
 (def s0 (atom 0))
 (def s1 (atom 0))
@@ -60,9 +66,9 @@
 ;;  [0 4 8]
 ;;  [2 4 6])
 
-(defn check-for-winner [sq a b c]
-  (and (not (= (sq a) 0))
-       (= (sq a) (sq b) (sq c))))
+;; (defn check-for-winner [sq a b c]
+;;   (and (not (= (sq a) 0))
+;;        (= (sq a) (sq b) (sq c))))
 
 
 (defn any-winners [sq]
@@ -277,6 +283,24 @@
 
 ;; forget about into and lists and hiccup code for now , lets see if get clickable area working , and it can be set and unset
 
+;; player p in tic tac toe , last player to go has to be winner or draw
+;; p either 1 or 2 meaning player 1 or player 2
+(defn check-for-winner [p]
+  (let [b @board-state]
+    (cond
+      (= p (b 0) (b 1) (b 2)) true
+      (= p (b 3) (b 4) (b 5)) true
+      (= p (b 6) (b 7) (b 8)) true
+      (= p (b 0) (b 3) (b 6)) true
+      (= p (b 1) (b 4) (b 7)) true
+      (= p (b 2) (b 5) (b 8)) true
+      (= p (b 0) (b 4) (b 8)) true
+      (= p (b 2) (b 4) (b 6)) true
+      true false)))
+
+
+
+
 
 (defn square [x y n]
   (let  [c (@board-state n)]
@@ -290,7 +314,16 @@
             :on-click (fn [ev]
                         (when (and (= c 0) @no-winner)
                           (reset! board-state (assoc @board-state n @player))
-                          (reset! player (next-player @player))))      
+                          (when (check-for-winner @player)
+                            (reset! no-winner false)
+                            (reset! winner @player)
+                            ;; launch a garish winner banner
+                            (reset! stats (str "player " @player " has WON !"))
+                            )
+                          (when @no-winner
+                            (reset! player (next-player @player))                            
+                            (reset! stats (str "player "@player " to move.")))
+                          ))      
             }
       ]
      )
@@ -311,6 +344,7 @@
       ;;                         )}}]
       
       )))))
+
 
 
 ;; dev:tic-tac-toe.core=> (for [x (range 3)] (for [y (range 3)] (let [n (+ x (* y 3))] (list x y n))))
@@ -495,7 +529,15 @@
   (reset! board-state [0 0 0
                        0 0 0
                        0 0 0])
+  (reset! no-winner true)
+  (reset! player 1)
+  (reset! winner 0)
+  (reset! stats "player 1 to move")
   )
+
+
+
+
 
 
 
@@ -514,11 +556,8 @@
   [:div {:class "clock"}
    [:h1 {:style {:text-align "center" } } @title]
 
-   [:div {:class "game" :align "center"}
-    [tic-tac-toe-board]
-    ]
+   [:h2 {:style {:text-align "center" } } @stats]
 
-   
    [:div {:id "newGame" :align "center"}
     [:button {:on-click (fn [ev]
                           (new-game)
@@ -527,6 +566,10 @@
               }
      "New Game" ]
     ]
+
+   [:div {:class "game" :align "center"}
+    [tic-tac-toe-board]
+    ]
    
    
    ;;[:img {:id "img1"           :src "img1.jpg"           :style {:visibility "shown" :opacity @opacity}}] 
@@ -534,9 +577,6 @@
     ;;[:img {:id "img3" :src "img3.jpg" :style {:visibility "shown"}}]
     ]
    ])
-
-
-
 
 
 (reagent/render-component [tic-tac-toe]
