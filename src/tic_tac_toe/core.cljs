@@ -10,11 +10,36 @@
   )
 
 (enable-console-print!)
-
+  
 
 (def title (atom "Tic Tac Toe"))
 
-(def board-state (reagent/atom {:sq [0,0,0,0,0,0,0,0,0] :who-go 1 :winner false}))
+(def board-state (atom [0 0 0
+                        0 0 0
+                        0 0 0]))
+
+
+(def s0 (atom 0))
+(def s1 (atom 0))
+(def s2 (atom 0))
+(def s3 (atom 0))
+(def s4 (atom 0))
+(def s5 (atom 0))
+(def s6 (atom 0))
+(def s7 (atom 0))
+(def s8 (atom 0))
+
+(def player (atom 1))
+
+
+
+
+
+
+;; counter 1 is outside the viewBox 0 0 3 3
+(def counter1 (atom {:x "-5" :y "-5"}))
+
+
 
 ;; recap javascript mouse events 
 ;; function clickEvent(e) {
@@ -81,10 +106,14 @@
 
 ;; change board-state with next player
 (defn next-player [p]
-  (if
-      (= p 1)
-    2
-    1))
+   (if
+       (= p 1)
+     2
+     1))
+
+
+
+
 
 
 (defn make-square-clickable [x y s bgcolor sq player]  
@@ -95,11 +124,22 @@
            :height "1"
            :style {:fill bgcolor}
            :on-click (fn [ev]
-                       (reset! board-state {:sq (assoc sq s player)  :who-go (next-player player)})
-                       (console.log "you clicked on my square x,y= " x " , " y )
+
+                       ;; when [0,0] square is clicked , place counter at centre square
+                       ;; (when (and (= x 0) (= y 0))
+                       ;;   (reset! counter1 (atom {:x "1.5" :y "1.5"})))
+                       ;;(console.log "clickable square before : board sq :" (@board-state :sq))
+                       
+                       (reset! board-state {:sq (assoc sq s @player)
+                                            :who-go (next-player @player)
+                                            :winner false})
+
+                       ;; (console.log "clickable square after : board sq :" (@board-state :sq))
+                       ;; (console.log "you clicked on my square x,y= " x " , " y )
                        )
            }]
    ))
+
 
 
 
@@ -120,6 +160,7 @@
    ))
 
 
+
 (defn make-square-player-1 [x y s bgcolor]
   (make-square-occupied x y s bgcolor 1))
 
@@ -137,7 +178,7 @@
         true         (make-square-player-2 x y s bgcolor)))))
 
 
-              
+
 
 ;; if 0 then empty square and if clicked based on current board state , place that players counter there ,
 ;; update board state
@@ -148,19 +189,19 @@
 
 (defn line-1 []
    ;; horz divider 1
-  [:rect {:x "0"  :y "1"  :width "3" :height "0.01" :style {:fill "black"}   } ] )
+  [:rect {:x "0"  :y "1"  :width "3" :height "0.03" :style {:fill "black"}   } ] )
 
 (defn line-2 []
    ;; horz divider 2
-   [:rect {:x "0"  :y "2"  :width "3" :height "0.01" :style {:fill "black"}   } ])
+   [:rect {:x "0"  :y "2"  :width "3" :height "0.03" :style {:fill "black"}   } ])
 
 (defn line-3 []
    ;; vert divider 1
-  [:rect {:x "1"  :y "0"  :width "0.01" :height "3" :style {:fill "black"}   } ])
+  [:rect {:x "1"  :y "0"  :width "0.03" :height "3" :style {:fill "black"}   } ])
 
 (defn line-4 []
    ;; vert divider 2
-  [:rect {:x "2"  :y "0"  :width "0.01" :height "3" :style {:fill "black"}   } ])
+  [:rect {:x "2"  :y "0"  :width "0.03" :height "3" :style {:fill "black"}   } ])
 
 
 (defn four-lines []
@@ -205,8 +246,171 @@
 
 
 
-;;[make-square 0 0 0 "blue"]
+(defn make-click-box [x y]
+  (list
+   [:rect {:x x :y y :width "1" :height "1" :style {:fill "blue"}
+           :on-click (fn [ev]
+                       (reset! s1 @player)
+                       (reset! player (next-player @player)))
+
+                       }]))
+
+
+
+(defn player-coin [x y p]
+  (list
+   [:rect {:x x :y y :width "1" :height "1" :style {:fill "blue"}}]
+   [:circle {:cx (+ x 0.5) :cy (+ y 0.5) :r 0.45 :style {:stroke "green" :stroke-width "0.01" :fill (if (= p 1) "red" "black")}}]))
+
+
+
+;; bug with new game , like old svg dont get out the way.
+
+
+
+;; brutally simple + effective + tested + works + easy to read + easy to comprehend
+;;
+;; (defn tic-tac-toe-board []  
+;;   (into
+;;    [:svg {:width "500" :height "500" :viewBox "0 0 3 3" }]
+;;    (four-lines)))
+
+;; forget about into and lists and hiccup code for now , lets see if get clickable area working , and it can be set and unset
+
+
+(defn square [x y n]
+  (let  [c (@board-state n)]
+
+    (concat
+    (list
+     [:rect {:x x :y y :width "1" :height "1" :style {:fill (cond
+                                                              (= 0 (mod n 2)) "gold"
+                                                              true "sienna"
+                                                              )}
+            :on-click (fn [ev]
+                        (when (and (= c 0) @no-winner)
+                          (reset! board-state (assoc @board-state n @player))
+                          (reset! player (next-player @player))))      
+            }
+      ]
+     )
+
+    
+    ;; either nil or list of svg things, at the moment a coloured circle 
+    (if (= c 0)
+      nil      
+       (list 
+      [:circle {:cx (+ x 0.5) :cy (+ y 0.5) :r 0.45 :style {:stroke "green" :stroke-width "0.01" :fill
+                                                            (if (= c 1)
+                                                              "black"
+                                                              "white")}} ]
+      ;; [:rect {:x (+ x 0.25) :y (+ y 0.25) :width "0.5" :height "0.5"
+      ;;         :style {:fill (cond
+      ;;                         (= c 1) "brown"
+      ;;                         true "turquoise"
+      ;;                         )}}]
+      
+      )))))
+
+
+;; dev:tic-tac-toe.core=> (for [x (range 3)] (for [y (range 3)] (let [n (+ x (* y 3))] (list x y n))))
+;; (((0 0 0) (0 1 3) (0 2 6))
+;;  ((1 0 1) (1 1 4) (1 2 7)) 
+;;  ((2 0 2) (2 1 5) (2 2 8)))
+
+
+(defn sweet []
+  (for [n (range 9)]
+    (let [x (mod n 3)]
+      (let [y (/ (- n x) 3)]
+        (list x y n)))))
+
+
+
+
+(defn tic-tac-toe-board3 []
+  (reduce
+   into
+   [:svg {:width "500" :height "500" :viewBox "0 0 3 3" }]
+   (list
+     (square 0 0 0)
+     (square 1 0 1)
+     (square 2 0 2)
+     (square 0 1 3)
+     (square 1 1 4)
+     (square 2 1 5)
+     (square 0 2 6)
+     (square 1 2 7)
+     (square 2 2 8)
+     )
+   )
+  )
+
+
 (defn tic-tac-toe-board []
+  (reduce into
+   [:svg {:width "500" :height "500" :viewBox "0 0 3 3" }]
+   (list
+     (square 0 0 0)
+     (square 1 0 1)
+     (square 2 0 2)
+     (square 0 1 3)
+     (square 1 1 4)
+     (square 2 1 5)
+     (square 0 2 6)
+     (square 1 2 7)
+     (square 2 2 8)
+     (four-lines)
+     )
+   )
+  )
+
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+     
+
+     
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    ;;   (list
+    ;;    (cond
+    ;;      (= @s0 0) [make-click-box 0 0]
+    ;;      (= @s0 1) [player-coin 0 0 1]
+    ;;      (= @s0 2) [player-coin 0 0 2] 
+    ;;      )))]
+    ;; (list))])
+
+   
+   
+
+
+
+
+;;[make-square 0 0 0 "blue"]
+(defn tic-tac-toe-board2 []
   [:div {:class "game" :align "center"}
    (reduce into
            [:svg {:width "500" :height "500" :viewBox "0 0 3 3" :style {:margin "none"}}]           
@@ -219,14 +423,16 @@
             (make-square 0 1 3 "green")
             (make-square 1 1 4 "blue")
             (make-square 2 1 5 "green")
-
+            
             (make-square 0 2 6 "blue")
             (make-square 1 2 7 "green")
             (make-square 2 2 8 "blue")
-
+            
             (four-lines)
             
             ))])
+
+
 
 
      ;; (make-square 1 0 1 "green")
@@ -281,22 +487,45 @@
     ;;             } ])
 
  
-  
+
+
+
   
 (defn new-game []
-  (reset! board-state (reagent/atom {:sq [0,0,0,0,0,0,0,0,0] :who-go 1 :winner false})))
+  (reset! board-state [0 0 0
+                       0 0 0
+                       0 0 0])
+  )
+
+
+
+
+
+  
+
+
+
+;;  (reset! counter1 (atom {:x "-5" :y "-5"})))
+
+
+
 
 (defn tic-tac-toe []
   [:div {:class "clock"}
    [:h1 {:style {:text-align "center" } } @title]
+
+   [:div {:class "game" :align "center"}
+    [tic-tac-toe-board]
+    ]
+
    
-   [tic-tac-toe-board]
    [:div {:id "newGame" :align "center"}
     [:button {:on-click (fn [ev]
-                          [new-game]
+                          (new-game)
                           (console.log "should be a new game !")
                           )
-              } "New Game" ]
+              }
+     "New Game" ]
     ]
    
    
@@ -308,16 +537,20 @@
 
 
 
+
+
 (reagent/render-component [tic-tac-toe]
                           (. js/document (getElementById "app")))
 
 
-(set!  (.-bgColor js/document) "red")
+(set!  (.-bgColor js/document) "skyblue")
 
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
+  ;; place counter outside the viewBox
+  ;;(reset! counter1 {:x "-5" :y "-5"})
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
 )
 
